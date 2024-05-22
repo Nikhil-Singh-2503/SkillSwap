@@ -28,16 +28,18 @@ def loginPage(request):
 
         try:
             user = User.objects.get(username=username)
+            user = authenticate(request, username = username , password = password)
+
+            if user is not None:
+                login(request, user)
+                messages.success(request,'Login Successfully.')
+                return redirect('home')
+            else:
+                messages.error(request,'Username or Password is invalid.')
         except:
             messages.error(request, 'User does not exist.')
         
-        user = authenticate(request, username = username , password = password)
-
-        if user is not None:
-            login(request, user)
-            return redirect('home')
-        else:
-            messages.error(request,'Username or Password does not exist.')
+        
 
     context = {'page':page}
     return render (request, 'base/login_register.html', context)
@@ -62,7 +64,7 @@ def registerPage(request):
             messages.error(request, 'An error occured during registration')
     return render(request,'base/login_register.html',{'form':form})
 
-
+@login_required(login_url='login')
 def home(request):
     q = request.GET.get('q') if request.GET.get('q') != None else ''
 
@@ -187,3 +189,6 @@ def activityPage(request):
     room_messages = Message.objects.all()
     context = {'room_messages':room_messages}
     return render(request,'base/activity.html', context)
+
+def homePage(request):
+    return render(request, 'base/homepage.html')
