@@ -1,3 +1,5 @@
+from base64 import b64encode
+import codecs
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib import messages
@@ -8,6 +10,8 @@ from django.contrib.auth import authenticate,login, logout
 from django.contrib.auth.forms import UserCreationForm
 from .models import Room, Topic, Message
 from .forms import RoomForm, UserForm
+from .forms import CustomUserCreationForm
+from .models import AdditionalUserDetails
 
 # rooms =[
 #     {'id':1, 'name': 'Learn python'},
@@ -46,37 +50,61 @@ def loginPage(request):
 
 def logoutUser(request):
     logout(request)
-    return redirect('home')
+    return redirect('/')
 
 def registerPage(request):
     page = 'register'
-    form = UserCreationForm()
+    form = CustomUserCreationForm()
 
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST, request.FILES)
+        print(request.FILES)
         if form.is_valid():
             user = form.save(commit=False)
             user.username = user.username.lower()
             user.save()
+
+            # Create additional user details
+            gender = form.cleaned_data.get('gender')
+            avatar = form.cleaned_data.get('avatar')
+
+            # Set avatar URL based on gender and username
+            avatar_url = f"https://avatar.iran.liara.run/public/{gender}?username={user.username}"
+
+            additional_details = AdditionalUserDetails(
+                username=user,
+                gender=gender,
+                avatar=avatar.read() if avatar else None  # Save the avatar binary data if provided
+            )
+            additional_details.save()
+
             login(request, user)
             return redirect('home')
         else:
-            messages.error(request, 'An error occured during registration')
-    return render(request,'base/login_register.html',{'form':form})
+            for field in form.errors:
+                for error in form.errors[field]:
+                    messages.error(request, f"{error}")
+    return render(request, 'base/login_register.html', {'form': form})
 
 @login_required(login_url='login')
 def home(request):
     q = request.GET.get('q') if request.GET.get('q') != None else ''
+
+    current_user = request.user
 
     rooms = Room.objects.filter(Q(topic__name__icontains = q) | Q(name__icontains=q) | Q(description__icontains=q))
 
     room_count = rooms.count()
 
     topics = Topic.objects.all()[0:5]
+    input_image = 'https://randomuser.me/api/portraits/men/22.jpg'
  
     room_messages = Message.objects.filter(Q(room__topic__name__icontains=q))
 
-    context = {'rooms':rooms,'topics':topics ,'room_count':room_count, 'room_messages':room_messages}
+    additional_info = AdditionalUserDetails.objects.filter(username = current_user)
+    
+    context = {'rooms':rooms,'topics':topics ,'room_count':room_count, 'room_messages':room_messages, 'avatar':input_image}
+    context = addLogo(additional_info, context)
     return render(request,'base/home.html',context)
 
 @login_required(login_url='login')
@@ -192,3 +220,16 @@ def activityPage(request):
 
 def homePage(request):
     return render(request, 'base/homepage.html')
+
+
+def addLogo(additional_info, context):
+    if additional_info:
+        avatar = additional_info[0].avatar
+        if avatar:
+            encoded = b64encode(avatar)
+            encoded = codecs.decode(encoded, 'utf-8')
+            mime = ['image/jpeg','image/svg+xml','image/png','image/x-icon']
+            for mime_val in mime:
+                input_image = "data:%s;base64,%s" % (mime_val, encoded)
+            context['avatar']=input_image
+    return context

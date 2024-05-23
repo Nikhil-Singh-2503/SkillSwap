@@ -36,3 +36,10 @@ class Message(models.Model):
 
     def __str__(self):
         return self.body[0:50]
+
+class AdditionalUserDetails(models.Model):
+    username = models.ForeignKey(User, on_delete = models.CASCADE)
+    gender = models.CharField(default="Male", max_length = 1)
+    avatar = models.BinaryField(default=b"\x08")
+
+

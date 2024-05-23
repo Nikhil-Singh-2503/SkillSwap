@@ -68,7 +68,7 @@
           <div class="layout__body">
             <h2 class="auth__tagline">Find your study partner</h2>
 
-            <form class="form" action="" method="post">
+            <form class="form" action="" method="post" enctype="multipart/form-data">
               {% csrf_token %}
               {% for field in form %}
               <div class="form__group form__group">

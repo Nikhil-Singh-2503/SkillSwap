@@ -7,7 +7,17 @@
     <link rel="stylesheet" href="{% static 'styles/style.css' %}" />
     <title>Homepage</title>
 </head>
-<body>
+<body onload="myFunction()">
+    <div id="loader" class="loader">
+        <div class="loader-square"></div>
+        <div class="loader-square"></div>
+        <div class="loader-square"></div>
+        <div class="loader-square"></div>
+        <div class="loader-square"></div>
+        <div class="loader-square"></div>
+        <div class="loader-square"></div>
+      </div>
+    <div id="content"  style="display:none;">
     {%include 'navbar.html'%}
     <div class="tagline">
         <h1>SkillSwap</h1>
@@ -133,5 +143,16 @@
               
         </a>
     </div>
+</div>
+<script>
+    var myVar;
+    function myFunction() {
+      myVar = setTimeout(showPage, 4000);
+    }
+    function showPage() {
+      document.getElementById("loader").style.display = "none";
+      document.getElementById("content").style.display = "block";
+    }
+    </script>
 </body>
 </html>
